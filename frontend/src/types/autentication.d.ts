@@ -27,8 +27,23 @@ interface Todo {
   id: string;
   title: string;
   description: string;
-  status: "iniciar" | "em andamento" | "concluida";
+  status: TodoStatus;
   created_at: string;
 }
 
-type TodoStatus = "pending" | "in-progress" | "completed";
+type TodoStatus = "iniciar" | "em andamento" | "concluida";
+
+interface TodoPayload {
+  title?: string;
+  description?: string;
+  status?: TodoStatus;
+}
+
+interface Props {
+  onAdd: (todoData: TodoPayload) => Promise<void>;
+}
+
+interface HeaderProps {
+  user: User | null;
+  logout: () => void;
+}

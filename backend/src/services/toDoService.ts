@@ -28,21 +28,21 @@ export async function createTodo(userId: string, title: string, description: str
     return data || [];
   }
 
-  export async function updateTodoStatus(todoId: string, userId: string, status: 'iniciar' | 'em andamento' | 'concluida') {
-    const { data, error } = await supabase
-      .from('todos')
-      .update({ status })
-      .eq('id', todoId)
-      .eq('user_id', userId)
-      .select()
-      .single();
-  
-    if (error) {
-      console.error("Erro ao atualizar tarefa:", error);
-      throw new Error('Não foi possível atualizar a tarefa. Verifique se a tarefa pertence a você.');
+    export async function updateTodoStatus(todoId: string, userId: string, status: 'iniciar' | 'em andamento' | 'concluida') {
+      const { data, error } = await supabase
+        .from('todos')
+        .update({ status })
+        .eq('id', todoId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+    
+      if (error) {
+        console.error("Erro ao atualizar tarefa:", error);
+        throw new Error('Não foi possível atualizar a tarefa. Verifique se a tarefa pertence a você.');
+      }
+      return data;
     }
-    return data;
-  }
   
   export async function deleteTodo(todoId: string, userId: string) {
     const { error, count } = await supabase
@@ -58,3 +58,19 @@ export async function createTodo(userId: string, title: string, description: str
     
     return { message: 'Tarefa deletada com sucesso.' };
   }
+
+export async function updateTodoTasks(todoId: string, userId: string, title: string, description?: string) {
+    const { data, error } = await supabase
+      .from('todos')
+      .update({ title, description })
+      .eq('id', todoId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+      if (error) {
+        console.error("Erro ao atualizar tarefa:", error);
+        throw new Error('Não foi possível atualizar a tarefa. Verifique se a tarefa pertence a você.');
+      }
+      return data;
+}

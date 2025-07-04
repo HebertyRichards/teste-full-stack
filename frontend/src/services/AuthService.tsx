@@ -56,7 +56,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
       }
-
       if (tokenToUse) {
         try {
           axios.defaults.headers.common.Authorization = `Bearer ${tokenToUse}`;
@@ -76,7 +75,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           logout();
         }
       }
-
       setLoading(false);
     };
 
@@ -101,7 +99,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         Cookies.set(REFRESH_TOKEN_KEY, refreshToken, { expires: 30 });
       }
       axios.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
-      alert("Login realizado com sucesso!");
       router.push("/");
     } catch (error) {
       console.error("Erro no login:", error);

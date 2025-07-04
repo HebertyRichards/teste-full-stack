@@ -1,21 +1,43 @@
 "use client";
 
-import { useState, useEffect, FormEvent, useCallback } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { useAuth } from "@/services/AuthService";
+import { useTodos } from "@/hooks/useTodos";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import Header from "@/components/Header";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Trash2, Pencil, Check, X } from "lucide-react";
 
 export default function TasksPage() {
   const { user, loading: authLoading, logout } = useAuth();
   const router = useRouter();
 
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    todos,
+    isLoading,
+    error,
+    addTodo,
+    updateStatus,
+    deleteTodo,
+    updateTodoContent,
+  } = useTodos();
 
-  const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [editedTitle, setEditedTitle] = useState("");
+  const [editedDescription, setEditedDescription] = useState("");
+  const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -23,193 +45,209 @@ export default function TasksPage() {
     }
   }, [user, authLoading, router]);
 
-  const fetchTodos = useCallback(async () => {
-    if (!user) return;
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await axios.get<Todo[]>(`${BASE_URL}/api/todos`);
-      setTodos(response.data);
-    } catch (err) {
-      setError("Falha ao carregar as tarefas. Tente novamente mais tarde.");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, BASE_URL]);
-  useEffect(() => {
-    fetchTodos();
-  }, [fetchTodos]);
-
-  const handleAddTodo = async (e: FormEvent) => {
+  const handleAddSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      alert("O título da tarefa não pode ser vazio.");
-      return;
-    }
-
-    try {
-      const response = await axios.post(`${BASE_URL}/api/todos`, {
-        title,
-        description,
-      });
-      const newTodo = response.data as Todo;
-      setTodos([...todos, newTodo]);
-      setTitle("");
-      setDescription("");
-    } catch (err) {
-      setError("Falha ao adicionar a tarefa.");
-      console.error(err);
-    }
+    if (!newTitle.trim()) return;
+    await addTodo({ title: newTitle, description: newDescription });
+    setNewTitle("");
+    setNewDescription("");
   };
 
-  const handleUpdateStatus = async (id: string, status: Todo["status"]) => {
-    try {
-      const response = await axios.put(`${BASE_URL}/api/todos/${id}`, {
-        status,
-      });
-      const updatedTodo = response.data as Todo;
-      setTodos(todos.map((todo) => (todo.id === id ? updatedTodo : todo)));
-    } catch (err) {
-      setError("Falha ao atualizar a tarefa.");
-      console.error(err);
-    }
+  const handleStartEditing = (todo: Todo) => {
+    setEditingTodoId(todo.id);
+    setEditedTitle(todo.title);
+    setEditedDescription(todo.description);
   };
 
-  const handleDeleteTodo = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir esta tarefa?")) {
-      try {
-        await axios.delete(`${BASE_URL}/api/todos/${id}`);
-        setTodos(todos.filter((todo) => todo.id !== id));
-      } catch (err) {
-        setError("Falha ao excluir a tarefa.");
-        console.error(err);
-      }
-    }
+  const handleCancelEditing = () => {
+    setEditingTodoId(null);
+    setEditedTitle("");
+    setEditedDescription("");
+  };
+
+  const handleSaveEditing = async () => {
+    if (!editingTodoId || !editedTitle.trim()) return;
+    await updateTodoContent(editingTodoId, {
+      title: editedTitle,
+      description: editedDescription,
+    });
+    handleCancelEditing();
   };
   if (authLoading || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
-        <div className="text-center">
-          <p className="text-2xl">Carregando...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-2xl">Carregando...</p>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-8 font-sans">
-      <div className="max-w-4xl mx-auto">
-        <header className="flex flex-col sm:flex-row justify-between items-center mb-10 pb-4 border-b border-gray-700">
-          <h1 className="text-4xl font-bold text-center sm:text-left mb-4 sm:mb-0">
-            Olá, {user?.username}!
-          </h1>
-          <button
-            onClick={logout}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-transform duration-200 hover:scale-105"
-          >
-            Sair
-          </button>
-        </header>
-
-        {error && (
-          <p className="bg-red-500 text-white p-3 rounded-lg mb-6 text-center">
-            {error}
-          </p>
-        )}
-        <div className="bg-gray-800 p-6 rounded-xl mb-10 shadow-lg border border-gray-700">
-          <h2 className="text-2xl font-semibold mb-5">Adicionar Nova Tarefa</h2>
-          <form onSubmit={handleAddTodo} className="space-y-4">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Título da tarefa"
-              className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
-              required
-            />
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descrição (opcional)"
-              className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
-              rows={3}
-            />
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105"
+  const renderTaskActions = (todo: Todo) => {
+    switch (todo.status) {
+      case "iniciar":
+        return (
+          <>
+            <Button onClick={() => updateStatus(todo.id, "em andamento")}>
+              Iniciar
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => deleteTodo(todo.id)}
             >
-              Adicionar Tarefa
-            </button>
-          </form>
-        </div>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </>
+        );
+      case "em andamento":
+        return (
+          <>
+            <Button onClick={() => updateStatus(todo.id, "concluida")}>
+              Concluir
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => updateStatus(todo.id, "iniciar")}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => deleteTodo(todo.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </>
+        );
+      case "concluida":
+        return (
+          <>
+            <Select
+              onValueChange={(status) =>
+                updateStatus(todo.id, status as Todo["status"])
+              }
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Reabrir Tarefa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="iniciar">Reabrir (A Fazer)</SelectItem>
+                <SelectItem value="em andamento">
+                  Reabrir (Em Andamento)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => deleteTodo(todo.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen p-4 sm:p-8 font-sans">
+      <div className="max-w-4xl mx-auto">
+        <Header user={user} logout={logout} />
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTitle>Ocorreu um Erro</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <Card className="mb-10">
+          <CardHeader>
+            <CardTitle>Adicionar Nova Tarefa</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddSubmit} className="space-y-4">
+              <Input
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Título da tarefa"
+                required
+              />
+              <Textarea
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Descrição"
+              />
+              <Button type="submit" className="w-full">
+                Adicionar Tarefa
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
         <div>
           <h2 className="text-3xl font-bold mb-6">Sua Lista de Tarefas</h2>
           <div className="space-y-4">
             {todos.length > 0 ? (
               todos.map((todo) => (
-                <div
-                  key={todo.id}
-                  className="bg-gray-800 p-5 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-gray-700 hover:border-blue-500 transition-colors"
-                >
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold">{todo.title}</h3>
-                    <p className="text-gray-400 mt-1">
-                      {todo.description || "Sem descrição"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4 w-full sm:w-auto mt-4 sm:mt-0">
-                    <div className="relative w-full sm:w-40">
-                      <select
-                        value={todo.status}
-                        onChange={(e) =>
-                          handleUpdateStatus(
-                            todo.id,
-                            e.target.value as Todo["status"]
-                          )
-                        }
-                        className="w-full appearance-none bg-gray-700 border border-gray-600 text-white py-2 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500 cursor-pointer"
-                      >
-                        <option value="iniciar">A Fazer</option>
-                        <option value="em andamento">Em Andamento</option>
-                        <option value="concluida">Concluída</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-                        <svg
-                          className="fill-current h-4 w-4"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                        </svg>
-                      </div>
+                <Card key={todo.id} className="p-5 space-y-4">
+                  {editingTodoId === todo.id ? (
+                    <div className="space-y-2">
+                      <Input
+                        value={editedTitle}
+                        onChange={(e) => setEditedTitle(e.target.value)}
+                      />
+                      <Textarea
+                        value={editedDescription}
+                        onChange={(e) => setEditedDescription(e.target.value)}
+                      />
                     </div>
-                    <button
-                      onClick={() => handleDeleteTodo(todo.id)}
-                      className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-transform duration-200 hover:scale-110"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
+                  ) : (
+                    <div>
+                      <h3 className="text-xl font-bold">{todo.title}</h3>
+                      <p className="text-muted-foreground mt-1">
+                        {todo.description}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Criado em:{" "}
+                        {new Date(todo.created_at).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2">
+                    {editingTodoId === todo.id ? (
+                      <>
+                        <Button size="icon" onClick={handleSaveEditing}>
+                          <Check className="h-4 w-4" />{" "}
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={handleCancelEditing}
+                        >
+                          <X className="h-4 w-4" />{" "}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        {renderTaskActions(todo)}
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => handleStartEditing(todo)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
-                </div>
+                </Card>
               ))
             ) : (
-              <div className="text-center text-gray-400 py-10 bg-gray-800 rounded-xl">
-                <p className="text-lg">Você ainda não tem tarefas.</p>
-                <p>Adicione sua primeira tarefa no formulário acima!</p>
-              </div>
+              <Card className="text-center text-muted-foreground p-10">
+                <p className="text-lg">Você não tem nenhuma tarefa criada</p>
+              </Card>
             )}
           </div>
         </div>
