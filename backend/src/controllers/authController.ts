@@ -43,6 +43,7 @@ export async function get(req: AuthRequest, res: Response) {
     const user = await authService.getUser(req.userId!);
     res.status(200).json({ user }); 
   } catch (error) {
+    console.error("Erro ao obter usuário:", error);
     res.status(404).json({ message: error instanceof Error ? error.message : 'Usuário não encontrado' });
   }
 }

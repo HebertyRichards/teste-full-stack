@@ -47,9 +47,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             { refreshToken }
           );
           const { accessToken: newAccessToken } = data;
-          Cookies.set(AUTH_TOKEN_KEY, newAccessToken, { expires: 1 });
+          Cookies.set(AUTH_TOKEN_KEY, newAccessToken, { expires: 1 / 24 });
           tokenToUse = newAccessToken;
-          console.log("Sessão renovada com sucesso.");
         } catch (error) {
           console.error("Falha ao renovar sessão, deslogando.", error);
           logout();
@@ -89,7 +88,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string,
     keepLoggedIn: boolean = false
   ) => {
-    console.log("[Auth] Tentando login:", email);
     try {
       const { data } = await axios.post<LoginResponse>(
         `${BASE_URL}/auth/login`,
@@ -98,11 +96,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { accessToken, refreshToken, user } = data;
       setUser(user);
 
-      Cookies.set(AUTH_TOKEN_KEY, accessToken, { expires: 1 / 1440 });
+      Cookies.set(AUTH_TOKEN_KEY, accessToken, { expires: 1 / 24 });
       if (refreshToken) {
         Cookies.set(REFRESH_TOKEN_KEY, refreshToken, { expires: 30 });
       }
       axios.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+      alert("Login realizado com sucesso!");
       router.push("/");
     } catch (error) {
       console.error("Erro no login:", error);
@@ -121,8 +120,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email,
         password,
       });
+      alert("Registro realizado com sucesso! Faça login para continuar");
       router.push("/login");
-      console.log("Registro com sucesso");
     } catch (error) {
       console.error("Erro no registro", error);
       alert("Falha no registro. O email pode já estar em uso.");

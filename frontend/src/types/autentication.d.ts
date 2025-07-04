@@ -22,3 +22,13 @@ interface LoginResponse {
 interface RefreshTokenResponse {
   accessToken: string;
 }
+
+interface Todo {
+  id: string;
+  title: string;
+  description: string;
+  status: "iniciar" | "em andamento" | "concluida";
+  created_at: string;
+}
+
+type TodoStatus = "pending" | "in-progress" | "completed";

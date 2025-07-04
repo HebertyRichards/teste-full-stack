@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
+import toDoRoutes from './routes/toDoRoutes';
 import { corsMiddleware } from './middleware/cors';
 
 dotenv.config();
@@ -13,6 +14,7 @@ app.use(express.json());
 
 
 app.use('/auth', authRoutes);
+app.use('/api',toDoRoutes);
 
 
 app.use((_req, res) => {
