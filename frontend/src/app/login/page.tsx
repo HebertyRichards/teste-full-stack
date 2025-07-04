@@ -84,7 +84,7 @@ export default function Login() {
               </div>
             </div>
             <CardFooter className="flex flex-col gap-4 pt-6 px-0 pb-0">
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full cursor-pointer">
                 Entrar
               </Button>
               <Button variant="link" asChild>

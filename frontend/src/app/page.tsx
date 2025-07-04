@@ -5,19 +5,12 @@ import { useAuth } from "@/services/AuthService";
 import { useTodos } from "@/hooks/useTodos";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
+import TaskCard from "@/components/TaskCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Trash2, Pencil, Check, X } from "lucide-react";
 
 export default function TasksPage() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -81,79 +74,22 @@ export default function TasksPage() {
     );
   }
 
-  const renderTaskActions = (todo: Todo) => {
-    switch (todo.status) {
-      case "iniciar":
-        return (
-          <>
-            <Button onClick={() => updateStatus(todo.id, "em andamento")}>
-              Iniciar
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => deleteTodo(todo.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </>
-        );
-      case "em andamento":
-        return (
-          <>
-            <Button onClick={() => updateStatus(todo.id, "concluida")}>
-              Concluir
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => updateStatus(todo.id, "iniciar")}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => deleteTodo(todo.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </>
-        );
-      case "concluida":
-        return (
-          <>
-            <Select
-              onValueChange={(status) =>
-                updateStatus(todo.id, status as Todo["status"])
-              }
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Reabrir Tarefa" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="iniciar">Reabrir (A Fazer)</SelectItem>
-                <SelectItem value="em andamento">
-                  Reabrir (Em Andamento)
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => deleteTodo(todo.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </>
-        );
-      default:
-        return null;
-    }
+  const toStartTasks = todos.filter((t) => t.status === "iniciar");
+  const inProgressTasks = todos.filter((t) => t.status === "em andamento");
+  const completedTasks = todos.filter((t) => t.status === "concluida");
+
+  const cardHandlers = {
+    onStartEditing: handleStartEditing,
+    onCancelEditing: handleCancelEditing,
+    onSaveEditing: handleSaveEditing,
+    onDelete: deleteTodo,
+    onUpdateStatus: updateStatus,
   };
 
   return (
     <div className="min-h-screen p-4 sm:p-8 font-sans">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
+        {" "}
         <Header user={user} logout={logout} />
         {error && (
           <Alert variant="destructive" className="mb-6">
@@ -161,7 +97,6 @@ export default function TasksPage() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-
         <Card className="mb-10">
           <CardHeader>
             <CardTitle>Adicionar Nova Tarefa</CardTitle>
@@ -185,69 +120,74 @@ export default function TasksPage() {
             </form>
           </CardContent>
         </Card>
-        <div>
-          <h2 className="text-3xl font-bold mb-6">Sua Lista de Tarefas</h2>
-          <div className="space-y-4">
-            {todos.length > 0 ? (
-              todos.map((todo) => (
-                <Card key={todo.id} className="p-5 space-y-4">
-                  {editingTodoId === todo.id ? (
-                    <div className="space-y-2">
-                      <Input
-                        value={editedTitle}
-                        onChange={(e) => setEditedTitle(e.target.value)}
-                      />
-                      <Textarea
-                        value={editedDescription}
-                        onChange={(e) => setEditedDescription(e.target.value)}
-                      />
-                    </div>
-                  ) : (
-                    <div>
-                      <h3 className="text-xl font-bold">{todo.title}</h3>
-                      <p className="text-muted-foreground mt-1">
-                        {todo.description}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Criado em:{" "}
-                        {new Date(todo.created_at).toLocaleDateString("pt-BR")}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-end gap-2">
-                    {editingTodoId === todo.id ? (
-                      <>
-                        <Button size="icon" onClick={handleSaveEditing}>
-                          <Check className="h-4 w-4" />{" "}
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={handleCancelEditing}
-                        >
-                          <X className="h-4 w-4" />{" "}
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        {renderTaskActions(todo)}
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => handleStartEditing(todo)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex flex-col gap-4">
+            <h3 className="text-xl font-bold text-center pb-2 border-b-2">
+              A Fazer
+            </h3>
+            {toStartTasks.length > 0 ? (
+              toStartTasks.map((todo) => (
+                <TaskCard
+                  key={todo.id}
+                  todo={todo}
+                  isEditing={editingTodoId === todo.id}
+                  editedTitle={editedTitle}
+                  editedDescription={editedDescription}
+                  onSetEditedTitle={setEditedTitle}
+                  onSetEditedDescription={setEditedDescription}
+                  {...cardHandlers}
+                />
               ))
             ) : (
-              <Card className="text-center text-muted-foreground p-10">
-                <p className="text-lg">Você não tem nenhuma tarefa criada</p>
-              </Card>
+              <p className="text-center text-muted-foreground mt-4">
+                Nenhuma tarefa aqui.
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-4">
+            <h3 className="text-xl font-bold text-center pb-2 border-b-2">
+              Em Andamento
+            </h3>
+            {inProgressTasks.length > 0 ? (
+              inProgressTasks.map((todo) => (
+                <TaskCard
+                  key={todo.id}
+                  todo={todo}
+                  isEditing={editingTodoId === todo.id}
+                  editedTitle={editedTitle}
+                  editedDescription={editedDescription}
+                  onSetEditedTitle={setEditedTitle}
+                  onSetEditedDescription={setEditedDescription}
+                  {...cardHandlers}
+                />
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground mt-4">
+                Nenhuma tarefa aqui.
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-4">
+            <h3 className="text-xl font-bold text-center pb-2 border-b-2">
+              Concluídas
+            </h3>
+            {completedTasks.length > 0 ? (
+              completedTasks.map((todo) => (
+                <TaskCard
+                  key={todo.id}
+                  todo={todo}
+                  isEditing={editingTodoId === todo.id}
+                  editedTitle={editedTitle}
+                  editedDescription={editedDescription}
+                  onSetEditedTitle={setEditedTitle}
+                  onSetEditedDescription={setEditedDescription}
+                  {...cardHandlers}
+                />
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground mt-4">
+                Nenhuma tarefa aqui.
+              </p>
             )}
           </div>
         </div>

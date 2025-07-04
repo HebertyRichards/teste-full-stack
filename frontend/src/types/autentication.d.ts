@@ -47,3 +47,17 @@ interface HeaderProps {
   user: User | null;
   logout: () => void;
 }
+
+interface TaskCardProps {
+  todo: Todo;
+  isEditing: boolean;
+  editedTitle: string;
+  editedDescription: string;
+  onSetEditedTitle: (value: string) => void;
+  onSetEditedDescription: (value: string) => void;
+  onStartEditing: (todo: Todo) => void;
+  onCancelEditing: () => void;
+  onSaveEditing: () => void;
+  onDelete: (id: string) => void;
+  onUpdateStatus: (id: string, status: Todo["status"]) => void;
+}

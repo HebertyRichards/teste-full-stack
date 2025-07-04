@@ -8,7 +8,7 @@ export default function Header({ user, logout }: HeaderProps) {
       <h1 className="text-4xl font-bold mb-4 sm:mb-0">
         Olá, {user?.username || "Usuário"}!
       </h1>
-      <Button variant="destructive" onClick={logout}>
+      <Button variant="destructive" onClick={logout} className="cursor-pointer">
         Sair
       </Button>
     </header>
