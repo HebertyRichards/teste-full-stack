@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <AuthProvider>
           <ThemeProvider
@@ -24,8 +24,10 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <ModeToggle />
             {children}
+            <div className="fixed top-5 right-5 z-50">
+              <ModeToggle />
+            </div>
           </ThemeProvider>
         </AuthProvider>
       </body>
