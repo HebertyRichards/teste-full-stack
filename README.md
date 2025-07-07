@@ -56,7 +56,7 @@ Siga os passos abaixo para configurar e executar a aplicação em seu ambiente d
 ### **1. Clonar o Repositório**
 
 ```bash
-git clone [https://github.com/HebertyRichards/teste-full-stack.git](https://github.com/HebertyRichards/teste-full-stack.git)
+git clone https://github.com/HebertyRichards/teste-full-stack.git
 cd teste-full-stack
 ```
 
@@ -83,6 +83,26 @@ JWT_EXPIRATION="1h"
 # Segredo para gerar o Refresh Token. Deve ser diferente do JWT_SECRET.
 REFRESH_TOKEN_SECRET="outro_segredo_ainda_mais_secreto_para_refresh" -> pode ser de sua escolha
 REFRESH_TOKEN_EXPIRATION="30d"
+```
+OBS: é necessário criar conta no supabase, criar um projeto e após isso criar essas tabelas. A variável SUPABASE_URL você consegue em Data API e a SUPABASE_ANON_KEY em API Keys
+
+```sql
+CREATE TABLE users (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+); 
+
+CREATE TABLE todos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT DEFAULT 'iniciar' CHECK (status IN ('iniciar', 'em andamento', 'concluida')),
+  completed BOOLEAN GENERATED ALWAYS AS (status = 'concluida') STORED,
+  created_at TIMESTAMP DEFAULT now()
+);
 ```
 
 ### **Frontend**
